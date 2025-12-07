@@ -343,7 +343,12 @@ const HalleyFractal = {
 
       ctx.drawImage(sourceCanvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
 
-      return thumbCanvas.toDataURL('image/webp', 0.5);
+      // Try WebP first, fallback to JPEG if not supported
+      const webpData = thumbCanvas.toDataURL('image/webp', 0.5);
+      if (webpData.startsWith('data:image/webp')) {
+        return webpData;
+      }
+      return thumbCanvas.toDataURL('image/jpeg', 0.5);
     };
 
     const formatRelativeTime = (timestamp) => {
