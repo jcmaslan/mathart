@@ -401,7 +401,7 @@ const HalleyFractal = {
       window.location.hash = entry.hash;
       showHistory.value = false;
       // The hash change will trigger the watch and re-render
-      window.location.reload();
+      // window.location.reload(); // Removed: unnecessary, hash watcher will handle re-render
     };
 
     const deleteHistoryEntry = (index) => {
