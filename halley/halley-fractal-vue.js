@@ -331,7 +331,7 @@ const HalleyFractal = {
       }
     };
 
-    const generateThumbnail = (sourceCanvas, maxSize = 80) => {
+    const generateThumbnail = (sourceCanvas, maxSize = 64) => {
       const thumbCanvas = document.createElement('canvas');
       const ctx = thumbCanvas.getContext('2d');
 
@@ -343,7 +343,7 @@ const HalleyFractal = {
 
       ctx.drawImage(sourceCanvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
 
-      return thumbCanvas.toDataURL('image/jpeg', 0.7);
+      return thumbCanvas.toDataURL('image/webp', 0.5);
     };
 
     const formatRelativeTime = (timestamp) => {
