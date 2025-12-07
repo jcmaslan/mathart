@@ -1485,7 +1485,7 @@ const HalleyFractal = {
                       </svg>
                     </button>
                     <button
-                      @click.stop="deleteHistoryEntry(history.indexOf(entry))"
+                      @click.stop="deleteHistoryEntry(history.findIndex(h => h.hash === entry.hash))"
                       class="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-red-400"
                       title="Delete"
                     >
