@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Halley Art</title>
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Vue 3 from CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Fullscreen canvas styling */
+    canvas:fullscreen {
+      object-fit: contain;
+      width: 100vw;
+      height: 100vh;
+      background: black;
+    }
+
+    canvas:-webkit-full-screen {
+      object-fit: contain;
+      width: 100vw;
+      height: 100vh;
+      background: black;
+    }
+
+    canvas:-moz-full-screen {
+      object-fit: contain;
+      width: 100vw;
+      height: 100vh;
+      background: black;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- Vue Component -->
+  <script src="halley-fractal-vue.js"></script>
+
+  <!-- Mount the component -->
+  <script>
+    const { createApp } = Vue;
+    createApp(HalleyFractal).mount('#app');
+  </script>
+</body>
+</html>
