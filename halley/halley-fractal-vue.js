@@ -381,7 +381,8 @@ const HalleyFractal = {
         thumbnail,
         timestamp,
         formula: formula.value,
-        resolution: `${canvasDimensions.value.width}×${canvasDimensions.value.height}`
+        resolution: `${canvasDimensions.value.width}×${canvasDimensions.value.height}`,
+        favorite: false
       };
 
       // Add to beginning of array (most recent first)
@@ -412,6 +413,11 @@ const HalleyFractal = {
         history.value = [];
         saveHistory();
       }
+    };
+
+    const toggleFavorite = (index) => {
+      history.value[index].favorite = !history.value[index].favorite;
+      saveHistory();
     };
 
     // Complex number operations
@@ -1190,7 +1196,8 @@ const HalleyFractal = {
       formatRelativeTime,
       revertToHistory,
       deleteHistoryEntry,
-      clearHistory
+      clearHistory,
+      toggleFavorite
     };
   },
 
@@ -1436,16 +1443,31 @@ const HalleyFractal = {
                     <div class="text-xs text-gray-400 truncate">{{ entry.resolution }}</div>
                     <div class="text-xs text-purple-400">{{ formatRelativeTime(entry.timestamp) }}</div>
                   </div>
-                  <button
-                    @click.stop="deleteHistoryEntry(index)"
-                    class="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-red-400"
-                    title="Delete"
-                  >
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="3 6 5 6 21 6"/>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                    </svg>
-                  </button>
+                  <div class="flex flex-col gap-1">
+                    <button
+                      @click.stop="toggleFavorite(index)"
+                      class="p-1 transition-all"
+                      :class="entry.favorite ? 'text-red-500 hover:text-red-400' : 'text-gray-500 hover:text-red-400'"
+                      title="Toggle favorite"
+                    >
+                      <svg v-if="entry.favorite" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                      </svg>
+                      <svg v-else class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                      </svg>
+                    </button>
+                    <button
+                      @click.stop="deleteHistoryEntry(index)"
+                      class="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-red-400"
+                      title="Delete"
+                    >
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 <button
