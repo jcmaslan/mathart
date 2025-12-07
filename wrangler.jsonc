@@ -2,6 +2,12 @@
   "name": "mathart",
   "compatibility_date": "2025-12-06",
   "assets": {
-    "directory": "."
-  }
+    "directory": "./halley"
+  },
+  "routes": [
+    {
+      "pattern": "mathart.mykindofmind.com/*",
+      "custom_domain": true
+    }
+  ]
 }
