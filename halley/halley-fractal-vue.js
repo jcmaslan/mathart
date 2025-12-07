@@ -200,6 +200,7 @@ const HalleyFractal = {
     const showOnlyFavorites = ref(false);
     const HISTORY_STORAGE_KEY = 'halley-fractal-history';
     const MAX_HISTORY_ITEMS = 50;
+    const NOTIFICATION_TIMEOUT_MS = 3000;
 
     // Apply preset handler
     const applyPreset = (presetKey) => {
@@ -324,6 +325,11 @@ const HalleyFractal = {
       }
     };
 
+    const showStorageErrorNotification = () => {
+      showStorageError.value = true;
+      setTimeout(() => showStorageError.value = false, NOTIFICATION_TIMEOUT_MS);
+    };
+
     const saveHistory = () => {
       try {
         localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history.value));
@@ -341,13 +347,11 @@ const HalleyFractal = {
           } catch (retryError) {
             console.error('Failed to save even with reduced history:', retryError);
             // Show user notification that history couldn't be saved
-            showStorageError.value = true;
-            setTimeout(() => showStorageError.value = false, 3000);
+            showStorageErrorNotification();
           }
         } else {
           // Show user notification for other errors
-          showStorageError.value = true;
-          setTimeout(() => showStorageError.value = false, 3000);
+          showStorageErrorNotification();
         }
       }
     };
