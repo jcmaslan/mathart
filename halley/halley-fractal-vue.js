@@ -196,6 +196,7 @@ const HalleyFractal = {
     // History state for thumbnail navigation
     const history = ref([]);
     const showHistory = ref(false);
+    const showOnlyFavorites = ref(false);
     const HISTORY_STORAGE_KEY = 'halley-fractal-history';
     const MAX_HISTORY_ITEMS = 50;
 
@@ -1157,6 +1158,13 @@ const HalleyFractal = {
       return '⏳ Extremely slow';
     });
 
+    const filteredHistory = computed(() => {
+      if (showOnlyFavorites.value) {
+        return history.value.filter(entry => entry.favorite);
+      }
+      return history.value;
+    });
+
     return {
       canvasRef,
       resolution,
@@ -1193,6 +1201,8 @@ const HalleyFractal = {
       // History
       history,
       showHistory,
+      showOnlyFavorites,
+      filteredHistory,
       formatRelativeTime,
       revertToHistory,
       deleteHistoryEntry,
@@ -1416,20 +1426,37 @@ const HalleyFractal = {
                     <circle cx="12" cy="12" r="10"/>
                     <polyline points="12 6 12 12 16 14"/>
                   </svg>
-                  <span>History ({{ history.length }})</span>
+                  <span>History ({{ showOnlyFavorites ? filteredHistory.length + '/' : '' }}{{ history.length }})</span>
                 </label>
-                <button
-                  @click="showHistory = !showHistory"
-                  class="text-xs text-purple-400 hover:text-purple-300 transition-colors"
-                >
-                  {{ showHistory ? 'Hide' : 'Show' }}
-                </button>
+                <div class="flex items-center gap-2">
+                  <button
+                    @click="showOnlyFavorites = !showOnlyFavorites"
+                    :class="[
+                      'p-1 transition-all',
+                      showOnlyFavorites ? 'text-red-500 hover:text-red-400' : 'text-gray-500 hover:text-red-400'
+                    ]"
+                    title="Filter favorites"
+                  >
+                    <svg v-if="showOnlyFavorites" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                    <svg v-else class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                  </button>
+                  <button
+                    @click="showHistory = !showHistory"
+                    class="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                  >
+                    {{ showHistory ? 'Hide' : 'Show' }}
+                  </button>
+                </div>
               </div>
 
               <div v-if="showHistory" class="space-y-2 max-h-96 overflow-y-auto pr-1">
                 <div
-                  v-for="(entry, index) in history"
-                  :key="index"
+                  v-for="(entry, displayIndex) in filteredHistory"
+                  :key="entry.hash"
                   class="flex gap-2 p-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors group cursor-pointer"
                   @click="revertToHistory(entry)"
                 >
@@ -1445,7 +1472,7 @@ const HalleyFractal = {
                   </div>
                   <div class="flex flex-col gap-1">
                     <button
-                      @click.stop="toggleFavorite(index)"
+                      @click.stop="toggleFavorite(history.indexOf(entry))"
                       class="p-1 transition-all"
                       :class="entry.favorite ? 'text-red-500 hover:text-red-400' : 'text-gray-500 hover:text-red-400'"
                       title="Toggle favorite"
@@ -1458,7 +1485,7 @@ const HalleyFractal = {
                       </svg>
                     </button>
                     <button
-                      @click.stop="deleteHistoryEntry(index)"
+                      @click.stop="deleteHistoryEntry(history.indexOf(entry))"
                       class="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-red-400"
                       title="Delete"
                     >
@@ -1480,7 +1507,7 @@ const HalleyFractal = {
               </div>
 
               <p v-if="!showHistory" class="text-xs text-gray-400 italic">
-                Click show to browse {{ history.length }} saved render{{ history.length !== 1 ? 's' : '' }}
+                Click show to browse {{ showOnlyFavorites ? filteredHistory.length + ' favorite' : history.length + ' saved' }} render{{ (showOnlyFavorites ? filteredHistory.length : history.length) !== 1 ? 's' : '' }}
               </p>
             </div>
 
