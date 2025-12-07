@@ -193,6 +193,12 @@ const HalleyFractal = {
     const showCopied = ref(false);
     const selectedPreset = ref('default');
 
+    // History state for thumbnail navigation
+    const history = ref([]);
+    const showHistory = ref(false);
+    const HISTORY_STORAGE_KEY = 'halley-fractal-history';
+    const MAX_HISTORY_ITEMS = 50;
+
     // Apply preset handler
     const applyPreset = (presetKey) => {
       const preset = PRESETS[presetKey];
@@ -300,6 +306,110 @@ const HalleyFractal = {
         document.body.removeChild(textArea);
         showCopied.value = true;
         setTimeout(() => showCopied.value = false, 2000);
+      }
+    };
+
+    // History management functions
+    const loadHistory = () => {
+      try {
+        const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
+        if (stored) {
+          history.value = JSON.parse(stored);
+        }
+      } catch (e) {
+        console.warn('Failed to load history from localStorage:', e);
+        history.value = [];
+      }
+    };
+
+    const saveHistory = () => {
+      try {
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history.value));
+      } catch (e) {
+        console.warn('Failed to save history to localStorage:', e);
+      }
+    };
+
+    const generateThumbnail = (sourceCanvas, maxSize = 80) => {
+      const thumbCanvas = document.createElement('canvas');
+      const ctx = thumbCanvas.getContext('2d');
+
+      const { width, height } = sourceCanvas;
+      const scale = Math.min(maxSize / width, maxSize / height);
+
+      thumbCanvas.width = Math.floor(width * scale);
+      thumbCanvas.height = Math.floor(height * scale);
+
+      ctx.drawImage(sourceCanvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
+
+      return thumbCanvas.toDataURL('image/jpeg', 0.7);
+    };
+
+    const formatRelativeTime = (timestamp) => {
+      const now = Date.now();
+      const diff = now - timestamp;
+
+      const seconds = Math.floor(diff / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+
+      if (seconds < 60) return 'just now';
+      if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+      if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+      return `${days} day${days !== 1 ? 's' : ''} ago`;
+    };
+
+    const saveToHistory = () => {
+      const canvas = canvasRef.value;
+      if (!canvas) return;
+
+      const currentHash = window.location.hash.slice(1);
+      if (!currentHash) return;
+
+      // Check if this exact hash is already the most recent entry
+      if (history.value.length > 0 && history.value[0].hash === currentHash) {
+        return;
+      }
+
+      const thumbnail = generateThumbnail(canvas);
+      const timestamp = Date.now();
+
+      const entry = {
+        hash: currentHash,
+        thumbnail,
+        timestamp,
+        formula: formula.value,
+        resolution: `${canvasDimensions.value.width}×${canvasDimensions.value.height}`
+      };
+
+      // Add to beginning of array (most recent first)
+      history.value = [entry, ...history.value.filter(h => h.hash !== currentHash)];
+
+      // Keep only MAX_HISTORY_ITEMS
+      if (history.value.length > MAX_HISTORY_ITEMS) {
+        history.value = history.value.slice(0, MAX_HISTORY_ITEMS);
+      }
+
+      saveHistory();
+    };
+
+    const revertToHistory = (entry) => {
+      window.location.hash = entry.hash;
+      showHistory.value = false;
+      // The hash change will trigger the watch and re-render
+      window.location.reload();
+    };
+
+    const deleteHistoryEntry = (index) => {
+      history.value.splice(index, 1);
+      saveHistory();
+    };
+
+    const clearHistory = () => {
+      if (confirm('Clear all history? This cannot be undone.')) {
+        history.value = [];
+        saveHistory();
       }
     };
 
@@ -827,6 +937,9 @@ const HalleyFractal = {
       ctx.putImageData(imageData, 0, 0);
       isRendering.value = false;
       progress.value = 100;
+
+      // Save to history after successful render
+      saveToHistory();
     };
 
     // Download current canvas as PNG
@@ -850,6 +963,7 @@ const HalleyFractal = {
 
     // Render on initial mount and keyboard controls
     onMounted(() => {
+      loadHistory();
       renderFractal();
       const handleKeyDown = (e) => {
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', '+', '=', '-', '_'].includes(e.key)) {
@@ -1068,7 +1182,14 @@ const HalleyFractal = {
       resetView,
       toggleFullscreen,
       printSizeText,
-      speedIndicator
+      speedIndicator,
+      // History
+      history,
+      showHistory,
+      formatRelativeTime,
+      revertToHistory,
+      deleteHistoryEntry,
+      clearHistory
     };
   },
 
@@ -1276,6 +1397,67 @@ const HalleyFractal = {
               </select>
               <p v-if="PRESETS[selectedPreset]" class="text-xs text-gray-400 italic">
                 {{ PRESETS[selectedPreset].desc }}
+              </p>
+            </div>
+
+            <!-- History -->
+            <div v-if="history.length > 0" class="bg-gray-800 border-l-4 border-purple-500 rounded-lg p-3 shadow-lg">
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-sm font-medium flex items-center gap-2">
+                  <svg class="w-4 h-4 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <span>History ({{ history.length }})</span>
+                </label>
+                <button
+                  @click="showHistory = !showHistory"
+                  class="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                >
+                  {{ showHistory ? 'Hide' : 'Show' }}
+                </button>
+              </div>
+
+              <div v-if="showHistory" class="space-y-2 max-h-96 overflow-y-auto pr-1">
+                <div
+                  v-for="(entry, index) in history"
+                  :key="index"
+                  class="flex gap-2 p-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors group cursor-pointer"
+                  @click="revertToHistory(entry)"
+                >
+                  <img
+                    :src="entry.thumbnail"
+                    :alt="entry.formula"
+                    class="w-16 h-16 rounded object-cover flex-shrink-0 ring-1 ring-gray-600 group-hover:ring-purple-500 transition-all"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <div class="text-xs font-medium text-white truncate">{{ entry.formula }}</div>
+                    <div class="text-xs text-gray-400 truncate">{{ entry.resolution }}</div>
+                    <div class="text-xs text-purple-400">{{ formatRelativeTime(entry.timestamp) }}</div>
+                  </div>
+                  <button
+                    @click.stop="deleteHistoryEntry(index)"
+                    class="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-red-400"
+                    title="Delete"
+                  >
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <button
+                  v-if="history.length > 0"
+                  @click="clearHistory"
+                  class="w-full text-xs py-2 px-3 bg-gray-700 hover:bg-red-600/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
+                >
+                  Clear All History
+                </button>
+              </div>
+
+              <p v-if="!showHistory" class="text-xs text-gray-400 italic">
+                Click show to browse {{ history.length }} saved render{{ history.length !== 1 ? 's' : '' }}
               </p>
             </div>
 
