@@ -191,6 +191,7 @@ const HalleyFractal = {
       y: 0
     });
     const showCopied = ref(false);
+    const showStorageError = ref(false);
     const selectedPreset = ref('default');
 
     // History state for thumbnail navigation
@@ -199,6 +200,7 @@ const HalleyFractal = {
     const showOnlyFavorites = ref(false);
     const HISTORY_STORAGE_KEY = 'halley-fractal-history';
     const MAX_HISTORY_ITEMS = 50;
+    const NOTIFICATION_TIMEOUT_MS = 3000;
 
     // Apply preset handler
     const applyPreset = (presetKey) => {
@@ -323,11 +325,34 @@ const HalleyFractal = {
       }
     };
 
+    const showStorageErrorNotification = () => {
+      showStorageError.value = true;
+      setTimeout(() => showStorageError.value = false, NOTIFICATION_TIMEOUT_MS);
+    };
+
     const saveHistory = () => {
       try {
         localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history.value));
       } catch (e) {
         console.warn('Failed to save history to localStorage:', e);
+        
+        // Handle quota exceeded error specifically
+        if (e.name === 'QuotaExceededError') {
+          // Try to save with reduced history size
+          const reducedHistory = history.value.slice(0, Math.floor(MAX_HISTORY_ITEMS / 2));
+          try {
+            localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(reducedHistory));
+            history.value = reducedHistory;
+            console.warn(`Reduced history from ${MAX_HISTORY_ITEMS} to ${reducedHistory.length} items due to storage quota`);
+          } catch (retryError) {
+            console.error('Failed to save even with reduced history:', retryError);
+            // Show user notification that history couldn't be saved
+            showStorageErrorNotification();
+          }
+        } else {
+          // Show user notification for other errors
+          showStorageErrorNotification();
+        }
       }
     };
 
@@ -1181,6 +1206,7 @@ const HalleyFractal = {
       isRendering,
       progress,
       showCopied,
+      showStorageError,
       selectedPreset,
       canvasDimensions,
       bounds,
@@ -1456,6 +1482,14 @@ const HalleyFractal = {
                     {{ showHistory ? 'Hide' : 'Show' }}
                   </button>
                 </div>
+              </div>
+
+              <!-- Storage Error Notification -->
+              <div
+                v-if="showStorageError"
+                class="mb-2 px-3 py-2 bg-red-600/20 border border-red-500/50 rounded-lg text-xs text-red-400"
+              >
+                ⚠️ Storage limit reached. History has been reduced.
               </div>
 
               <div v-if="showHistory" class="space-y-2 max-h-96 overflow-y-auto pr-1">
