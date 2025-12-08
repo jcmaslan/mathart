@@ -1511,7 +1511,7 @@ const HalleyFractal = {
                   </div>
                   <div class="flex flex-col gap-1">
                     <button
-                      @click.stop="toggleFavorite(history.indexOf(entry))"
+                      @click.stop="toggleFavorite(history.findIndex(h => h.hash === entry.hash))"
                       class="p-1 transition-all"
                       :class="entry.favorite ? 'text-red-500 hover:text-red-400' : 'text-gray-500 hover:text-red-400'"
                       title="Toggle favorite"
